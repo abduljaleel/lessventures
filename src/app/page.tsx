@@ -1,125 +1,266 @@
+"use client";
+
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { ArrowRight, Target, BarChart3, Shield, BookOpen, Gem } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+
+function useInView(threshold = 0.15) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) setVisible(true); },
+      { threshold }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [threshold]);
+  return { ref, visible };
+}
+
+const stages = [
+  { name: "Idea", width: "20%", desc: "Capture and pressure-test the thesis" },
+  { name: "Validation", width: "40%", desc: "Customer evidence before capital" },
+  { name: "Build", width: "60%", desc: "Narrow MVP, instrumented from day one" },
+  { name: "Scale", width: "80%", desc: "Product-market fit earns investment" },
+  { name: "Sunset", width: "100%", desc: "Kill without ego, learn without waste" },
+];
 
 export default function LandingPage() {
+  const heroRef = useRef<HTMLDivElement>(null);
+  const [heroScrolled, setHeroScrolled] = useState(false);
+  const numberSection = useInView(0.2);
+  const systemSection = useInView(0.1);
+  const metricsSection = useInView(0.2);
+  const ctaSection = useInView(0.2);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setHeroScrolled(window.scrollY > 80);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
-    <div className="flex min-h-screen flex-col bg-[#0a0a0a] text-[#e8e4de]">
-      {/* Nav */}
-      <header className="border-b border-[#262220]">
-        <div className="mx-auto flex h-20 max-w-6xl items-center justify-between px-6">
-          <div className="flex items-center gap-3">
-            <Gem className="h-6 w-6 text-[#c5a572]" />
-            <span className="text-lg tracking-[0.2em] uppercase font-light">Less Ventures</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link href="/login"><Button variant="ghost" className="text-[#8a8580] hover:text-[#e8e4de] hover:bg-transparent">Sign in</Button></Link>
-            <Link href="/signup"><Button className="bg-[#c5a572] text-[#0a0a0a] hover:bg-[#d4b88a] rounded-none px-6">Get started</Button></Link>
+    <div className="min-h-screen bg-[#050505] text-white selection:bg-[#c5a572]/20 selection:text-white">
+      {/* ═══════════════════════════════════════════════════════════
+          HERO — Full viewport. "Less." then "is more." on scroll.
+      ═══════════════════════════════════════════════════════════ */}
+      <section
+        ref={heroRef}
+        className="relative flex min-h-screen flex-col items-center justify-center px-6"
+      >
+        {/* Subtle grain overlay */}
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage:
+              "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E\")",
+          }}
+        />
+
+        <div className="relative flex flex-col items-center">
+          {/* "Less." */}
+          <h1
+            className="text-[6rem] sm:text-[8rem] lg:text-[10rem] font-thin tracking-[-0.04em] leading-none transition-all duration-1000"
+            style={{ opacity: 1 }}
+          >
+            Less.
+          </h1>
+
+          {/* "is more." fades in on scroll */}
+          <p
+            className="mt-2 text-[2.5rem] sm:text-[3.5rem] lg:text-[4rem] font-thin tracking-[-0.02em] text-white/60 transition-all duration-1000 ease-out"
+            style={{
+              opacity: heroScrolled ? 1 : 0,
+              transform: heroScrolled ? "translateY(0)" : "translateY(20px)",
+            }}
+          >
+            is more.
+          </p>
+
+          {/* Gold divider */}
+          <div
+            className="mt-12 transition-all duration-1000 ease-out"
+            style={{
+              width: heroScrolled ? "80px" : "0px",
+              height: "1px",
+              background: "#c5a572",
+            }}
+          />
+
+          {/* Tagline */}
+          <p
+            className="mt-10 text-base sm:text-lg font-light tracking-[0.15em] uppercase text-white/30 transition-all duration-1000 delay-200 ease-out"
+            style={{
+              opacity: heroScrolled ? 1 : 0,
+              transform: heroScrolled ? "translateY(0)" : "translateY(12px)",
+            }}
+          >
+            The venture studio operating system.
+          </p>
+        </div>
+
+        {/* Scroll indicator */}
+        <div
+          className="absolute bottom-12 flex flex-col items-center gap-3 transition-opacity duration-700"
+          style={{ opacity: heroScrolled ? 0 : 0.3 }}
+        >
+          <span className="text-[10px] tracking-[0.3em] uppercase text-white/40">Scroll</span>
+          <div className="h-8 w-px bg-gradient-to-b from-white/20 to-transparent" />
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════
+          THE NUMBER — "12" with "ventures. one system."
+      ═══════════════════════════════════════════════════════════ */}
+      <section className="relative overflow-hidden py-40 px-6" ref={numberSection.ref}>
+        <div className="mx-auto flex max-w-5xl items-center justify-center gap-8 sm:gap-16">
+          <span
+            className="text-[10rem] sm:text-[14rem] lg:text-[18rem] font-thin leading-none tracking-[-0.06em] transition-all duration-1000 ease-out"
+            style={{
+              color: "#c5a572",
+              opacity: numberSection.visible ? 1 : 0,
+              transform: numberSection.visible ? "translateX(0)" : "translateX(-40px)",
+            }}
+          >
+            12
+          </span>
+          <div
+            className="flex flex-col transition-all duration-1000 delay-300 ease-out"
+            style={{
+              opacity: numberSection.visible ? 1 : 0,
+              transform: numberSection.visible ? "translateX(0)" : "translateX(40px)",
+            }}
+          >
+            <span className="text-2xl sm:text-4xl lg:text-5xl font-thin tracking-[-0.02em] text-white/80">
+              ventures.
+            </span>
+            <span className="mt-1 text-2xl sm:text-4xl lg:text-5xl font-thin tracking-[-0.02em] text-white/40">
+              one system.
+            </span>
           </div>
         </div>
-      </header>
+      </section>
 
-      {/* Hero */}
-      <section className="mx-auto flex max-w-5xl flex-col items-center px-6 py-32 text-center">
-        <div className="mb-8 h-px w-16 bg-[#c5a572]" />
-        <h1 className="max-w-4xl text-6xl font-extralight tracking-tight sm:text-7xl lg:text-8xl leading-[0.95]">
-          Less is more.
-        </h1>
-        <p className="mt-8 max-w-2xl text-lg font-light text-[#8a8580] leading-relaxed">
-          The venture studio operating system for disciplined builders.
-          Track ventures. Enforce stage gates. Allocate capital with rigor.
-        </p>
-        <div className="mt-12 flex gap-6">
+      {/* ═══════════════════════════════════════════════════════════
+          THE SYSTEM — Vertical stage ladder
+      ═══════════════════════════════════════════════════════════ */}
+      <section className="py-32 px-6" ref={systemSection.ref}>
+        <div className="mx-auto max-w-3xl">
+          {/* Section label */}
+          <div className="mb-20 text-center">
+            <span className="text-[11px] tracking-[0.3em] uppercase text-[#c5a572]">
+              The System
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-10">
+            {stages.map((stage, i) => (
+              <div
+                key={stage.name}
+                className="group transition-all duration-700 ease-out"
+                style={{
+                  opacity: systemSection.visible ? 1 : 0,
+                  transform: systemSection.visible
+                    ? "translateY(0)"
+                    : "translateY(30px)",
+                  transitionDelay: `${i * 150}ms`,
+                }}
+              >
+                {/* Stage label row */}
+                <div className="mb-3 flex items-baseline justify-between">
+                  <div className="flex items-baseline gap-4">
+                    <span className="text-[11px] tracking-[0.2em] uppercase text-white/20 font-mono">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <span className="text-lg sm:text-xl font-light tracking-wide text-white/80">
+                      {stage.name}
+                    </span>
+                  </div>
+                  <span className="text-xs text-white/20 font-light hidden sm:block">
+                    {stage.desc}
+                  </span>
+                </div>
+
+                {/* Progress bar */}
+                <div className="relative h-[2px] w-full bg-white/[0.06] overflow-hidden">
+                  <div
+                    className="absolute inset-y-0 left-0 transition-all duration-1000 ease-out"
+                    style={{
+                      width: systemSection.visible ? stage.width : "0%",
+                      transitionDelay: `${i * 150 + 300}ms`,
+                      background:
+                        "linear-gradient(90deg, #c5a572 0%, rgba(197,165,114,0.3) 100%)",
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════
+          METRICS STRIP — Three massive numbers
+      ═══════════════════════════════════════════════════════════ */}
+      <section className="border-y border-white/[0.06] py-24 px-6" ref={metricsSection.ref}>
+        <div className="mx-auto grid max-w-5xl grid-cols-1 gap-16 sm:grid-cols-3 text-center">
+          {[
+            { value: "$615K", label: "governed" },
+            { value: "63", label: "gates reviewed" },
+            { value: "0", label: "ventures killed without evidence" },
+          ].map((stat, i) => (
+            <div
+              key={stat.label}
+              className="transition-all duration-700 ease-out"
+              style={{
+                opacity: metricsSection.visible ? 1 : 0,
+                transform: metricsSection.visible
+                  ? "translateY(0)"
+                  : "translateY(20px)",
+                transitionDelay: `${i * 200}ms`,
+              }}
+            >
+              <div className="text-5xl sm:text-6xl lg:text-7xl font-thin tracking-[-0.04em] text-white">
+                {stat.value}
+              </div>
+              <div className="mt-3 text-[11px] tracking-[0.2em] uppercase text-white/25 font-light">
+                {stat.label}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════
+          CTA — Single thin-bordered button
+      ═══════════════════════════════════════════════════════════ */}
+      <section className="py-40 px-6" ref={ctaSection.ref}>
+        <div
+          className="mx-auto flex max-w-5xl flex-col items-center text-center transition-all duration-700 ease-out"
+          style={{
+            opacity: ctaSection.visible ? 1 : 0,
+            transform: ctaSection.visible ? "translateY(0)" : "translateY(20px)",
+          }}
+        >
           <Link href="/signup">
-            <Button size="lg" className="bg-[#c5a572] text-[#0a0a0a] hover:bg-[#d4b88a] rounded-none px-8 h-12 text-sm tracking-wider uppercase">
-              Start building
-              <ArrowRight className="ml-3 h-4 w-4" />
-            </Button>
-          </Link>
-          <Link href="/login">
-            <Button size="lg" variant="outline" className="border-[#262220] text-[#8a8580] hover:text-[#e8e4de] hover:border-[#c5a572] rounded-none px-8 h-12 text-sm tracking-wider uppercase bg-transparent">
-              Sign in
-            </Button>
+            <span className="inline-block border border-white/20 px-12 py-4 text-sm tracking-[0.2em] uppercase text-white/70 transition-all duration-300 hover:border-[#c5a572] hover:text-white cursor-pointer">
+              Enter the studio &rarr;
+            </span>
           </Link>
         </div>
       </section>
 
-      {/* Social proof bar */}
-      <section className="border-y border-[#262220]">
-        <div className="mx-auto max-w-6xl px-6 py-6 flex items-center justify-center">
-          <p className="text-sm tracking-[0.15em] uppercase text-[#8a8580] font-light">
-            Built for studios running 5&ndash;50 ventures
-          </p>
-        </div>
-      </section>
-
-      {/* Features */}
-      <section className="py-28">
-        <div className="mx-auto max-w-6xl px-6">
-          <div className="text-center mb-4">
-            <div className="mx-auto mb-6 h-px w-12 bg-[#c5a572]" />
-            <h2 className="text-3xl font-extralight tracking-tight sm:text-4xl">Discipline creates freedom</h2>
-            <p className="mt-4 text-[#8a8580] font-light max-w-xl mx-auto">
-              Most venture studios drown in noise. Less Ventures enforces the structure that lets you focus on what matters.
-            </p>
-          </div>
-          <div className="mt-16 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {[
-              { icon: Target, title: "Stage Gates", desc: "Every venture passes through structured checkpoints. No hand-waving. Evidence-based proceed, pivot, or kill decisions." },
-              { icon: BarChart3, title: "Portfolio Intelligence", desc: "See capital allocation, burn rates, and stage distribution across your entire portfolio at a glance." },
-              { icon: Shield, title: "Capital Discipline", desc: "Track budgets, enforce allocation rules, and govern capital deployment with the rigor it demands." },
-              { icon: BookOpen, title: "Venture Playbooks", desc: "Reusable templates for customer discovery, technical validation, and commercial viability testing." },
-            ].map((f) => (
-              <div key={f.title} className="border border-[#262220] bg-[#111111] p-8 group hover:border-[#c5a572]/30 transition-colors">
-                <f.icon className="h-6 w-6 text-[#c5a572]" />
-                <h3 className="mt-6 text-base font-medium tracking-wide">{f.title}</h3>
-                <p className="mt-3 text-sm text-[#8a8580] font-light leading-relaxed">{f.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Stats */}
-      <section className="border-y border-[#262220] bg-[#0e0e0e]">
-        <div className="mx-auto max-w-6xl px-6 py-20">
-          <div className="grid grid-cols-1 gap-12 sm:grid-cols-3 text-center">
-            {[
-              { value: "12", label: "Ventures tracked" },
-              { value: "63", label: "Stage gates reviewed" },
-              { value: "$615K", label: "Capital governed" },
-            ].map((stat) => (
-              <div key={stat.label}>
-                <div className="text-4xl font-extralight text-[#c5a572] tracking-tight">{stat.value}</div>
-                <div className="mt-2 text-sm text-[#8a8580] tracking-[0.1em] uppercase font-light">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="py-28">
-        <div className="mx-auto max-w-6xl px-6 text-center">
-          <div className="mx-auto mb-6 h-px w-12 bg-[#c5a572]" />
-          <h2 className="text-3xl font-extralight tracking-tight sm:text-4xl">Stop managing ventures in spreadsheets.</h2>
-          <p className="mt-4 text-lg text-[#8a8580] font-light">
-            Less Ventures gives you the operating system your studio deserves.
-          </p>
-          <Link href="/signup" className="mt-10 inline-block">
-            <Button size="lg" className="bg-[#c5a572] text-[#0a0a0a] hover:bg-[#d4b88a] rounded-none px-10 h-12 text-sm tracking-wider uppercase">
-              Create free account
-              <ArrowRight className="ml-3 h-4 w-4" />
-            </Button>
-          </Link>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t border-[#262220]">
-        <div className="mx-auto flex h-20 max-w-6xl items-center justify-between px-6 text-xs text-[#8a8580] tracking-[0.1em] uppercase font-light">
-          <span>&copy; {new Date().getFullYear()} Less Ventures</span>
-          <span>A 12 Cities venture</span>
+      {/* ═══════════════════════════════════════════════════════════
+          FOOTER — Minimal
+      ═══════════════════════════════════════════════════════════ */}
+      <footer className="border-t border-white/[0.04] py-8 px-6">
+        <div className="mx-auto flex max-w-5xl items-center justify-between text-[11px] tracking-[0.2em] uppercase text-white/15 font-light">
+          <span>&copy; Less Ventures</span>
+          <span>12 Cities</span>
         </div>
       </footer>
     </div>

@@ -1,7 +1,7 @@
 export const appConfig = {
-  name: "Less Ventures",
-  description: "Less is more. The venture studio operating system.",
-  url: "https://lessventures.us",
+  name: "Mend",
+  description: "A persistent agent that rewrites its own application logic.",
+  url: "https://mend.us",
   navItems: [
     { title: "Dashboard", href: "/dashboard", icon: "dashboard" },
     { title: "Ventures", href: "/ventures", icon: "boxes" },

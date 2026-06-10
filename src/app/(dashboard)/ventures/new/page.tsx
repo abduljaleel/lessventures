@@ -7,18 +7,32 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft } from "lucide-react";
+import { createVenture, type Tier } from "@/lib/data/api";
+import { ArrowLeft, LoaderCircle } from "lucide-react";
 import Link from "next/link";
 
 export default function NewVenturePage() {
   const router = useRouter();
   const [form, setForm] = useState({ name: "", domain: "", tier: "1", thesis: "" });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    // In production, this would save to Supabase
-    alert(`Venture "${form.name}" created! (Mock — would save to database)`);
-    router.push("/ventures");
+    setSubmitting(true);
+    setError(null);
+    try {
+      const venture = await createVenture({
+        name: form.name.trim(),
+        domain: form.domain.trim(),
+        tier: Number(form.tier) as Tier,
+        thesis: form.thesis.trim(),
+      });
+      router.push(`/ventures/${venture.id}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create venture");
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -60,9 +74,13 @@ export default function NewVenturePage() {
               <Label htmlFor="thesis">Thesis</Label>
               <Textarea id="thesis" placeholder="What problem does this venture solve?" value={form.thesis} onChange={(e) => setForm({ ...form, thesis: e.target.value })} rows={4} required />
             </div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
             <div className="flex gap-3 pt-4">
-              <Button type="submit">Create Venture</Button>
-              <Link href="/ventures"><Button variant="outline">Cancel</Button></Link>
+              <Button type="submit" disabled={submitting}>
+                {submitting && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                {submitting ? "Creating..." : "Create Venture"}
+              </Button>
+              <Link href="/ventures"><Button variant="outline" type="button">Cancel</Button></Link>
             </div>
           </form>
         </CardContent>

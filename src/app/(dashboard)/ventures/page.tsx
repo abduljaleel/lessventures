@@ -112,6 +112,12 @@ export default function VenturesPage() {
             </Link>
           </CardContent>
         </Card>
+      ) : filtered.length === 0 ? (
+        <Card>
+          <CardContent className="py-8 text-center text-sm text-muted-foreground">
+            No ventures in the “{filter}” stage.
+          </CardContent>
+        </Card>
       ) : (
         /* Venture Grid */
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

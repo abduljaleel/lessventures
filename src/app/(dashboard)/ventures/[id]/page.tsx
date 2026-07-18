@@ -23,13 +23,13 @@ import {
   type StageGate,
   type VentureDetail,
 } from "@/lib/data/api";
-import { CheckCircle, XCircle, Clock, ArrowLeft, LoaderCircle } from "lucide-react";
+import { CheckCircle, XCircle, Clock, MinusCircle, ArrowLeft, LoaderCircle } from "lucide-react";
 import Link from "next/link";
 
 const STATUS_CYCLE: Record<string, CheckStatus> = {
   pending: "passed",
   passed: "failed",
-  failed: "pending",
+  failed: "skipped",
   skipped: "pending",
 };
 
@@ -55,10 +55,13 @@ export default function VentureDetailPage() {
         setVenture(null);
         return;
       }
-      // Make sure the current stage always has an open gate to work against.
+      // Make sure the current stage always has an OPEN (undecided) gate to work
+      // against. A 'pivot' decision keeps the venture on the same stage but
+      // leaves its gate decided; without this, no fresh gate would be created
+      // and the workflow would dead-end on "Decision recorded: pivot".
       if (
         detail.status !== "killed" &&
-        !detail.gates.some((g) => g.stage === detail.stage)
+        !detail.gates.some((g) => g.stage === detail.stage && !g.decision)
       ) {
         const gate = await ensureStageGate(detail.id, detail.stage);
         detail.gates = [...detail.gates, gate];
@@ -271,6 +274,7 @@ export default function VentureDetailPage() {
                   <div className="flex items-center gap-3">
                     {check.status === "passed" ? <CheckCircle className="h-5 w-5 text-green-600" /> :
                      check.status === "failed" ? <XCircle className="h-5 w-5 text-red-600" /> :
+                     check.status === "skipped" ? <MinusCircle className="h-5 w-5 text-gray-500" /> :
                      <Clock className="h-5 w-5 text-yellow-600" />}
                     <div>
                       <span className="font-medium">{check.type}</span>
@@ -286,6 +290,7 @@ export default function VentureDetailPage() {
                     <Badge variant="outline" className={
                       check.status === "passed" ? "bg-green-50 text-green-700" :
                       check.status === "failed" ? "bg-red-50 text-red-700" :
+                      check.status === "skipped" ? "bg-gray-100 text-gray-700" :
                       "bg-yellow-50 text-yellow-700"
                     }>
                       {check.status}

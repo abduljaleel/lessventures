@@ -316,7 +316,13 @@ export async function fetchVentures(): Promise<Venture[]> {
   return ((data ?? []) as VentureRow[]).map((r) => mapVenture(r, userId, userName));
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function fetchVenture(id: string): Promise<VentureDetail | null> {
+  // Guard against non-UUID path segments (e.g. old seed ids or typo URLs):
+  // Postgres would otherwise return "invalid input syntax for type uuid" and
+  // surface a raw DB error instead of the page's "Venture not found" state.
+  if (!UUID_RE.test(id)) return null;
   const { supabase, userId, userName } = await getCtx();
   const { data, error } = await supabase
     .from("ventures")
@@ -401,7 +407,13 @@ export async function updateValidationCheckStatus(
 // Stage gates
 // ---------------------------------------------------------------------------
 
-/** Returns the most recent gate for (venture, stage), creating one if none exists. */
+/**
+ * Returns the most recent *open* (undecided) gate for (venture, stage),
+ * creating a fresh one if none exists. Filtering on `decision is null` means
+ * that after a 'pivot' decision — which leaves the venture on the same stage —
+ * a new open gate is created so the workflow can continue instead of
+ * dead-ending on the already-decided gate.
+ */
 export async function ensureStageGate(ventureId: string, stage: Stage): Promise<StageGate> {
   const { supabase } = await getCtx();
   const { data, error } = await supabase
@@ -409,6 +421,7 @@ export async function ensureStageGate(ventureId: string, stage: Stage): Promise<
     .select("*")
     .eq("venture_id", ventureId)
     .eq("stage", stage)
+    .is("decision", null)
     .order("created_at", { ascending: false })
     .limit(1);
   throwIfError(error, "Failed to load stage gate");
@@ -514,19 +527,21 @@ export async function addCapitalAllocation(
 // ---------------------------------------------------------------------------
 
 export interface ActivityEvent {
-  date: string;
+  date: string; // YYYY-MM-DD for display
+  ts: string; // full ISO timestamp for stable ordering
   action: string;
   user: string;
 }
 
 export function buildActivity(v: VentureDetail): ActivityEvent[] {
   const events: ActivityEvent[] = [
-    { date: v.createdAt, action: `Venture created: ${v.name}`, user: v.owner },
+    { date: v.createdAt, ts: v.createdAt, action: `Venture created: ${v.name}`, user: v.owner },
   ];
   for (const gate of v.gates) {
     if (gate.decision && gate.decidedAt) {
       events.push({
         date: toDateOnly(gate.decidedAt),
+        ts: gate.decidedAt,
         action: `Stage gate (${gate.stage}) decision: ${gate.decision}${gate.notes ? ` — ${gate.notes}` : ""}`,
         user: v.owner,
       });
@@ -535,6 +550,7 @@ export function buildActivity(v: VentureDetail): ActivityEvent[] {
   for (const alloc of v.allocations) {
     events.push({
       date: toDateOnly(alloc.createdAt),
+      ts: alloc.createdAt,
       action: `Capital ${alloc.allocationType} recorded — $${alloc.amount.toLocaleString()}${alloc.notes ? ` (${alloc.notes})` : ""}`,
       user: v.owner,
     });
@@ -543,12 +559,14 @@ export function buildActivity(v: VentureDetail): ActivityEvent[] {
     if (check.status !== "pending") {
       events.push({
         date: toDateOnly(check.createdAt),
+        ts: check.createdAt,
         action: `Validation check ${check.status}: ${check.type}`,
         user: v.owner,
       });
     }
   }
-  return events.sort((a, b) => b.date.localeCompare(a.date));
+  // Sort by full timestamp so same-day events keep a deterministic, correct order.
+  return events.sort((a, b) => b.ts.localeCompare(a.ts));
 }
 
 // ---------------------------------------------------------------------------

@@ -50,6 +50,8 @@ export default function DashboardPage() {
   const inValidation = ventures.filter((v) => v.stage === "validation");
   const totalBudget = ventures.reduce((s, v) => s + v.capitalBudget, 0);
   const totalSpent = ventures.reduce((s, v) => s + v.capitalSpent, 0);
+  const tierCount = new Set(ventures.map((v) => v.tier)).size;
+  const inactiveCount = ventures.length - active.length;
   const stages = ["idea", "validation", "build", "scale", "sunset"] as const;
   const stageCounts = stages.map((s) => ({ stage: s, count: ventures.filter((v) => v.stage === s).length }));
 
@@ -102,8 +104,8 @@ export default function DashboardPage() {
       ) : ventures.length > 0 ? (
         <>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <MetricCard icon={<Boxes className="h-4 w-4 text-muted-foreground" />} title="Total Ventures" value={String(ventures.length)} description="Across 3 tiers" />
-            <MetricCard icon={<TrendingUp className="h-4 w-4 text-green-600" />} title="Active" value={String(active.length)} description={`${inValidation.length} in validation`} />
+            <MetricCard icon={<Boxes className="h-4 w-4 text-muted-foreground" />} title="Total Ventures" value={String(ventures.length)} description={`Across ${tierCount} tier${tierCount === 1 ? "" : "s"}`} />
+            <MetricCard icon={<TrendingUp className="h-4 w-4 text-green-600" />} title="Active" value={String(active.length)} description={`${inactiveCount} paused/killed`} />
             <MetricCard icon={<AlertCircle className="h-4 w-4 text-yellow-600" />} title="In Validation" value={String(inValidation.length)} description="Awaiting stage gate review" />
             <MetricCard icon={<DollarSign className="h-4 w-4 text-blue-600" />} title="Capital Deployed" value={`$${(totalSpent / 1000).toFixed(0)}K`} description={`of $${(totalBudget / 1000).toFixed(0)}K budgeted`} />
           </div>

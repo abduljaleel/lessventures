@@ -13,6 +13,7 @@ export default function SettingsPage() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [status, setStatus] = useState<"success" | "error" | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
@@ -30,14 +31,32 @@ export default function SettingsPage() {
     e.preventDefault();
     setLoading(true);
     setMessage("");
+    setStatus(null);
 
-    const { error } = await supabase.auth.updateUser({
+    // Persist to BOTH the auth user_metadata (header avatar/menu reads this)
+    // and the public.profiles row (api.ts reads profiles.full_name for the
+    // venture owner display) so the two never drift out of sync.
+    const { error: authError } = await supabase.auth.updateUser({
       data: { full_name: fullName },
     });
 
-    if (error) {
-      setMessage(error.message);
+    let failure = authError?.message ?? null;
+    if (!failure) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .update({ full_name: fullName })
+          .eq("id", user.id);
+        if (profileError) failure = profileError.message;
+      }
+    }
+
+    if (failure) {
+      setStatus("error");
+      setMessage(failure);
     } else {
+      setStatus("success");
       setMessage("Profile updated successfully");
     }
     setLoading(false);
@@ -58,7 +77,15 @@ export default function SettingsPage() {
         <CardContent>
           <form onSubmit={handleUpdateProfile} className="space-y-4 max-w-md">
             {message && (
-              <div className="rounded-md bg-muted p-3 text-sm">{message}</div>
+              <div
+                className={
+                  status === "error"
+                    ? "rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
+                    : "rounded-md border border-green-600/30 bg-green-600/10 p-3 text-sm text-green-700 dark:text-green-400"
+                }
+              >
+                {message}
+              </div>
             )}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
